@@ -115,6 +115,9 @@ class PostController extends Controller
     {
         $keyword = $request->input('keyword');
 
+        // 全角スペースを半角スペースに変換
+        $keyword = str_replace('　', ' ', $keyword);
+
         // キーワードに基づいて検索
         $results = Post::query()
             ->when($keyword !== null, function ($query) use ($keyword) {
@@ -147,5 +150,6 @@ class PostController extends Controller
             'message' => null,
         ]);
     }
+
 
 }

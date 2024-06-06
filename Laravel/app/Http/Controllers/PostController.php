@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use App\Rules\NoWhitespaceOnly;
 
 
 class PostController extends Controller
@@ -42,12 +43,12 @@ class PostController extends Controller
     {
         // バリデーション
         $request->validate([
-            'newPost' => 'required|string|min:1|max:100'
+            'newPost' => ['required', 'string', 'max:100', new NoWhitespaceOnly],
         ], [
             'newPost.required' => '投稿内容を入力してください。',
             'newPost.string' => '投稿内容は文字列である必要があります。',
-            'newPost.min' => '投稿内容が空欄またはスペースのみです。',
             'newPost.max' => '投稿内容は100文字以内である必要があります。',
+            'newPost.no_whitespace_only' => '投稿内容を入力してください。',
         ]);
 
         // Eloquentを使用して新しい投稿を作成
@@ -59,6 +60,8 @@ class PostController extends Controller
 
         return redirect('/index'); // リダイレクト
     }
+
+
 
     //updateFormメソッド
     public function updateForm($id)
@@ -74,14 +77,22 @@ class PostController extends Controller
     {
         $request->validate([
             'id' => 'required|exists:posts,id',
-            'upPost' => 'required|string|max:100'
+            'upPost' => ['required', 'string', 'max:100', new NoWhitespaceOnly],
+        ], [
+            'id.required' => '投稿IDがありません。',
+            'id.exists' => '指定された投稿IDは存在しません。',
+            'upPost.required' => '投稿内容を入力してください。',
+            'upPost.string' => '投稿内容は文字列である必要があります。',
+            'upPost.max' => '投稿内容は100文字以内である必要があります。',
+            'upPost.no_whitespace_only' => '投稿内容を入力してください。',
         ]);
 
         $post = Post::findOrFail($request->input('id'));
         $post->update(['contents' => $request->input('upPost')]);
 
-        return redirect('/index');
+        return redirect('/index')->with('success', '投稿を更新しました');
     }
+
 
     //deleteメソッド
     public function delete($id)
@@ -99,29 +110,22 @@ class PostController extends Controller
         $this->middleware('auth');
     }
 
-    //曖昧検索メソッド
+    // 曖昧検索メソッドの修正
     public function search(Request $request)
     {
         $keyword = $request->input('keyword');
 
-        // キーワードが空欄またはスペースのみの場合
-        if (trim($keyword) === '') {
-            $results = Post::with('user')
-                ->get()
-                ->map(function ($post) {
-                    $post->latest_timestamp = max($post->created_at, $post->updated_at);
-                    return $post;
-                })
-                ->sortByDesc('latest_timestamp');
-
-            return view('posts.search-results', [
-                'lists' => $results,
-                'message' => null
-            ]);
-        }
-
         // キーワードに基づいて検索
-        $results = Post::where('contents', 'like', '%' . $keyword . '%')
+        $results = Post::query()
+            ->when($keyword !== null, function ($query) use ($keyword) {
+                // キーワードが空欄の場合は空として扱う
+                if (trim($keyword) === '') {
+                    return $query;
+                }
+
+                // キーワードに基づいて投稿内容を曖昧検索
+                return $query->where('contents', 'like', '%' . $keyword . '%');
+            })
             ->with('user')
             ->get()
             ->map(function ($post) {
@@ -134,13 +138,14 @@ class PostController extends Controller
         if ($results->isEmpty()) {
             return view('posts.search-results', [
                 'lists' => null,
-                'message' => '検索結果は0件です。'
+                'message' => '検索結果は0件です。',
             ]);
         }
 
         return view('posts.search-results', [
             'lists' => $results,
-            'message' => null
+            'message' => null,
         ]);
     }
+
 }

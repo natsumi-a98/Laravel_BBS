@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use App\Rules\NoWhitespaceOnly;
 
 class RegisterController extends Controller
 {
@@ -50,12 +51,18 @@ class RegisterController extends Controller
     protected function validator(array $data)
     {
         return Validator::make($data, [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', 'unique:users', new NoWhitespaceOnly],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+        ], [
+            'name.required' => '名前は必ず入力してください。',
+            'name.no_whitespace_only' => '名前は必ず入力してください。',
+            'password.required' => 'パスワードは必ず入力してください。',
+            'password.min' => 'パスワードは6文字以上で入力してください。',
+            'password.max' => 'パスワードは255文字以下で入力してください。',
         ]);
-    }
 
+    }
     /**
      * Create a new user instance after a valid registration.
      *

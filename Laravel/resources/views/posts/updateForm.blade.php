@@ -8,7 +8,21 @@
     {!! Form::hidden('id', $post->id) !!}
     {!! Form::input('text', 'upPost', $post->contents, ['required', 'class' => 'form-control']) !!}
   </div>
-  <button type="submit" class="btn btn-primary pull-right">更新</button>
+  @if ($errors->any())
+  <div class="alert alert-danger">
+    <ul>
+      @foreach ($errors->all() as $error)
+    <li>{{ $error }}</li>
+    @endforeach
+    </ul>
+  </div>
+  @endif
+  <div class="col-md-3">
+    <div class="form-group">
+      <button type="submit" class="btn btn-primary pull-right">更新</button>
+      <a href="/index" class="btn btn-success">戻る</a>
+    </div>
+  </div>
   {!! Form::close() !!}
 </div>
 

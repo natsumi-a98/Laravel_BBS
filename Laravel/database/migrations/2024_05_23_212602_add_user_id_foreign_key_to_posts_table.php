@@ -16,7 +16,7 @@ class AddUserIdForeignKeyToPostsTable extends Migration
     public function up()
     {
         Schema::table('posts', function (Blueprint $table) {
-            //ユーザーidのカラムを追加
+            //user_idのカラムを追加
             $table->unsignedBigInteger('user_id')->nullable();
             //外部キー制約の追加
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
